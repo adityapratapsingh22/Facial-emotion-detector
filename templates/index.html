@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Emotion Detector</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e1e2f, #2d2d44);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+            color: #eee;
+        }
+        .card {
+            background: #ffffff;
+            color: #222;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 480px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 24px;
+            color: #2d2d44;
+        }
+        .upload-box {
+            border: 2px dashed #aaa;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        input[type="file"] {
+            margin-bottom: 12px;
+        }
+        button {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background: #4338ca; }
+        .preview {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .preview img {
+            max-width: 100%;
+            max-height: 280px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .result {
+            margin-top: 16px;
+            padding: 20px;
+            background: #f4f5fb;
+            border-radius: 12px;
+            border-left: 4px solid #4f46e5;
+        }
+        .result h2 {
+            margin: 0 0 12px 0;
+            font-size: 19px;
+            color: #2d2d44;
+            text-transform: capitalize;
+        }
+        .emotion-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        .emotion-label {
+            width: 70px;
+            text-transform: capitalize;
+            color: #555;
+        }
+        .bar-track {
+            flex: 1;
+            background: #e2e2ee;
+            border-radius: 6px;
+            height: 10px;
+            margin: 0 8px;
+            overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%;
+            background: #4f46e5;
+            border-radius: 6px;
+        }
+        .emotion-pct {
+            width: 40px;
+            text-align: right;
+            color: #444;
+        }
+        .no-face {
+            text-align: center;
+            color: #b91c1c;
+            font-weight: 500;
+        }
+    .history {
+            margin-top: 24px;
+            border-top: 1px solid #e2e2ee;
+            padding-top: 16px;
+        }
+        .history h3 {
+            font-size: 14px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 13px;
+            border-bottom: 1px solid #f0f0f5;
+        }
+        .history-emotion {
+            text-transform: capitalize;
+            font-weight: 600;
+            color: #4f46e5;
+            width: 80px;
+        }
+        .history-confidence {
+            width: 50px;
+            color: #666;
+        }
+        .history-filename {
+            color: #999;
+            flex: 1;
+            text-align: right;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🙂 Facial Emotion Detector</h1>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <div class="upload-box">
+                <input type="file" name="image" accept="image/*" required>
+                <br>
+                <button type="submit">Detect Emotion</button>
+            </div>
+        </form>
+
+        <div class="upload-box" style="margin-top: 16px;">
+            <button type="button" id="startWebcamBtn">Use Webcam Instead</button>
+            <div id="webcamSection" style="display:none; margin-top: 16px;">
+                <video id="webcamVideo" autoplay playsinline style="width:100%; border-radius:12px;"></video>
+                <br><br>
+                <button type="button" id="captureBtn">Capture Photo</button>
+                <canvas id="webcamCanvas" style="display:none;"></canvas>
+                <div id="capturePreview" style="margin-top: 12px;"></div>
+                <button type="button" id="detectWebcamBtn" style="display:none; margin-top:12px;">Detect Emotion (Webcam)</button>
+            </div>
+        </div>
+
+        {% if image_path %}
+            <div class="preview">
+                <img src="/{{ image_path }}" alt="Uploaded image">
+            </div>
+        {% endif %}
+
+        {% if result %}
+            {% if result is string %}
+                <p class="no-face">{{ result }}</p>
+            {% else %}
+                <div class="result">
+                    <h2>Dominant Emotion: {{ result.top_emotion }} ({{ result.confidence }}%)</h2>
+                    {% for emotion, score in result.all_emotions.items() %}
+                        <div class="emotion-bar">
+                            <span class="emotion-label">{{ emotion }}</span>
+                            <div class="bar-track">
+                                <div class="bar-fill" style="width: {{ (score * 100) }}%;"></div>
+                            </div>
+                            <span class="emotion-pct">{{ (score * 100) | round(1) }}%</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+    {% if history %}
+            <div class="history">
+                <h3>Recent Detections</h3>
+                {% for item in history %}
+                    <div class="history-item">
+                        <span class="history-emotion">{{ item.top_emotion }}</span>
+                        <span class="history-confidence">{{ item.confidence }}%</span>
+                        <span class="history-filename">{{ item.filename }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+<script>
+        const startBtn = document.getElementById("startWebcamBtn");
+        const webcamSection = document.getElementById("webcamSection");
+        const video = document.getElementById("webcamVideo");
+        const captureBtn = document.getElementById("captureBtn");
+        const canvas = document.getElementById("webcamCanvas");
+        const capturePreview = document.getElementById("capturePreview");
+        const detectWebcamBtn = document.getElementById("detectWebcamBtn");
+
+        let capturedBlob = null;
+
+        startBtn.addEventListener("click", async () => {
+            webcamSection.style.display = "block";
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+            } catch (err) {
+                alert("Could not access webcam: " + err.message);
+            }
+        });
+
+        captureBtn.addEventListener("click", () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob((blob) => {
+                capturedBlob = blob;
+                const imageUrl = URL.createObjectURL(blob);
+                capturePreview.innerHTML = `<img src="${imageUrl}" style="max-width:100%; border-radius:12px;">`;
+                detectWebcamBtn.style.display = "inline-block";
+            }, "image/jpeg");
+        });
+
+        detectWebcamBtn.addEventListener("click", async () => {
+            if (!capturedBlob) {
+                alert("Please capture a photo first.");
+                return;
+            }
+            const formData = new FormData();
+            formData.append("image", capturedBlob, "webcam_capture.jpg");
+
+            detectWebcamBtn.textContent = "Detecting...";
+            detectWebcamBtn.disabled = true;
+
+            const response = await fetch("/upload", {
+                method: "POST",
+                body: formData
+            });
+
+            const html = await response.text();
+            document.open();
+            document.write(html);
+            document.close();
+        });
+    </script>
+    </body>
+</html>
