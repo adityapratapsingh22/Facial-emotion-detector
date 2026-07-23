@@ -11,7 +11,7 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 def uploaded_file(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
-detector = FER(mtcnn=False)
+detector = FER(mtcnn=True)
 history = []
 
 @app.route("/", methods=["GET"])
@@ -35,26 +35,54 @@ def upload():
 
     if len(result) == 0:
         return render_template("index.html", result="No face detected.", image_path=filepath, history=history)
+    
+    CONFIDENCE_THRESHOLD = 40.0
+    faces_summary = []
+    for face in result:
+        emotions = face["emotions"]
+        top_emotion = max(emotions, key=emotions.get)
+        confidence = emotions[top_emotion] * 100
 
-    face = result[0]
-    emotions = face["emotions"]
-    top_emotion = max(emotions, key=emotions.get)
-    confidence = emotions[top_emotion] * 100
+        if confidence < CONFIDENCE_THRESHOLD:
+            faces_summary.append({
+                "top_emotion": "unclear",
+                "confidence": f"{confidence:.1f}",
+                "all_emotions": emotions
+            })
+        else:
+            faces_summary.append({
+                "top_emotion": top_emotion,
+                "confidence": f"{confidence:.1f}",
+                "all_emotions": emotions
+            })
 
-    summary = {
-        "top_emotion": top_emotion,
-        "confidence": f"{confidence:.1f}",
-        "all_emotions": emotions
-    }
+    faces_summary = []
+    for face in result:
+        emotions = face["emotions"]
+        top_emotion = max(emotions, key=emotions.get)
+        confidence = emotions[top_emotion] * 100
+
+        if confidence < CONFIDENCE_THRESHOLD:
+            faces_summary.append({
+                "top_emotion": "unclear",
+                "confidence": f"{confidence:.1f}",
+                "all_emotions": emotions
+            })
+        else:
+            faces_summary.append({
+                "top_emotion": top_emotion,
+                "confidence": f"{confidence:.1f}",
+                "all_emotions": emotions
+            })
 
     history.insert(0, {
         "filename": file.filename,
         "image_path": filepath,
-        "top_emotion": top_emotion,
-        "confidence": f"{confidence:.1f}"
+        "top_emotion": faces_summary[0]["top_emotion"],
+        "confidence": faces_summary[0]["confidence"]
     })
 
-    return render_template("index.html", result=summary, image_path=filepath, history=history)
+    return render_template("index.html", result=faces_summary, image_path=filepath, history=history)
 
 if __name__ == "__main__":
     app.run(debug=True)

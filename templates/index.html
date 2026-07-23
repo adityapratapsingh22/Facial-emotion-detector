@@ -169,31 +169,32 @@
                 <button type="button" id="detectWebcamBtn" style="display:none; margin-top:12px;">Detect Emotion (Webcam)</button>
             </div>
         </div>
-
-        {% if image_path %}
-            <div class="preview">
-                <img src="/{{ image_path }}" alt="Uploaded image">
-            </div>
-        {% endif %}
-
         {% if result %}
             {% if result is string %}
                 <p class="no-face">{{ result }}</p>
             {% else %}
-                <div class="result">
-                    <h2>Dominant Emotion: {{ result.top_emotion }} ({{ result.confidence }}%)</h2>
-                    {% for emotion, score in result.all_emotions.items() %}
-                        <div class="emotion-bar">
-                            <span class="emotion-label">{{ emotion }}</span>
-                            <div class="bar-track">
-                                <div class="bar-fill" style="width: {{ (score * 100) }}%;"></div>
+                {% for face in result %}
+                    <div class="result" style="margin-bottom: 12px;">
+                        {% if face.top_emotion == "unclear" %}
+                            <h2>Face {{ loop.index }}: Low confidence ({{ face.confidence }}%)</h2>
+                            <p style="color:#888; font-size:13px;">Expression unclear — try a clearer photo.</p>
+                        {% else %}
+                            <h2>Face {{ loop.index }}: {{ face.top_emotion }} ({{ face.confidence }}%)</h2>
+                        {% endif %}
+                        {% for emotion, score in face.all_emotions.items() %}
+                            <div class="emotion-bar">
+                                <span class="emotion-label">{{ emotion }}</span>
+                                <div class="bar-track">
+                                    <div class="bar-fill" style="width: {{ (score * 100) }}%;"></div>
+                                </div>
+                                <span class="emotion-pct">{{ (score * 100) | round(1) }}%</span>
                             </div>
-                            <span class="emotion-pct">{{ (score * 100) | round(1) }}%</span>
-                        </div>
-                    {% endfor %}
-                </div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
             {% endif %}
         {% endif %}
+        
     </div>
     {% if history %}
             <div class="history">
