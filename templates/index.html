@@ -201,9 +201,9 @@
                 <h3>Recent Detections</h3>
                 {% for item in history %}
                     <div class="history-item">
-                        <span class="history-emotion">{{ item.top_emotion }}</span>
-                        <span class="history-confidence">{{ item.confidence }}%</span>
-                        <span class="history-filename">{{ item.filename }}</span>
+                        <span class="history-emotion">{{ item['top_emotion'] }}</span>
+                        <span class="history-confidence">{{ item['confidence'] }}%</span>
+                        <span class="history-filename">{{ item['timestamp'] }} — {{ item['filename'] }}</span>
                     </div>
                 {% endfor %}
             </div>
